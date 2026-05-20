@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TDS & VDS Calculator</title>
+
+  <style>
+
+    body{
+      font-family: Arial, sans-serif;
+      background:#f1f5f9;
+      margin:0;
+      padding:20px;
+    }
+
+    .container{
+      max-width:1200px;
+      margin:auto;
+    }
+
+    h1{
+      text-align:center;
+      color:#0f172a;
+    }
+
+    .input-box{
+      background:white;
+      padding:20px;
+      border-radius:15px;
+      margin-bottom:30px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .input-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+      gap:15px;
+    }
+
+    input{
+      width:100%;
+      padding:12px;
+      border:1px solid #ccc;
+      border-radius:8px;
+      font-size:16px;
+    }
+
+    button{
+      margin-top:20px;
+      padding:12px 25px;
+      background:#2563eb;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:16px;
+    }
+
+    button:hover{
+      background:#1d4ed8;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      gap:20px;
+    }
+
+    .card{
+      background:white;
+      border-radius:15px;
+      padding:20px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .card h2{
+      margin-top:0;
+      color:#0f172a;
+    }
+
+    .row{
+      display:flex;
+      justify-content:space-between;
+      padding:10px 0;
+      border-bottom:1px solid #ddd;
+    }
+
+    .net{
+      font-size:18px;
+      font-weight:bold;
+      color:green;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>TDS & VDS Calculator</h1>
+
+  <div class="input-box">
+
+    <div class="input-grid">
+
+      <div>
+        <label>Amount</label>
+        <input type="number" id="amount" value="17250">
+      </div>
+
+      <div>
+        <label>Tax Rate (%)</label>
+        <input type="number" id="taxRate" value="7.5">
+      </div>
+
+      <div>
+        <label>VAT Rate (%)</label>
+        <input type="number" id="vatRate" value="15">
+      </div>
+
+    </div>
+
+    <button onclick="calculateAll()">
+      Calculate
+    </button>
+
+  </div>
+
+  <div class="grid" id="cards"></div>
+
+</div>
+
+<script>
+
+function formatCurrency(value){
+  return "৳ " + value.toFixed(2);
+}
+
+function calculateAll(){
+
+  const amount = parseFloat(document.getElementById("amount").value);
+  const taxRate = parseFloat(document.getElementById("taxRate").value) / 100;
+  const vatRate = parseFloat(document.getElementById("vatRate").value) / 100;
+
+  const scenarios = [
+
+    {
+      title:"Including Tax and VAT",
+
+      calculate: () => {
+
+        let grossValue = amount;
+
+        let vds =
+          (grossValue / (1 + vatRate)) * vatRate;
+
+        let baseValue =
+          grossValue - vds;
+
+        let tds =
+          baseValue * taxRate;
+
+        let netPay =
+          grossValue - tds - vds;
+
+        return {
+          grossValue,
+          baseValue,
+          tds,
+          vds,
+          netPay
+        };
+      }
+    },
+
+    {
+      title:"Including Tax and Excluding VAT",
+
+      calculate: () => {
+
+        let baseValue = amount;
+
+        let tds =
+          baseValue * taxRate;
+
+        let vds =
+          baseValue * vatRate;
+
+        let grossValue =
+          amount + vds;
+
+        let netPay =
+          grossValue - tds - vds;
+
+        return {
+          grossValue,
+          baseValue,
+          tds,
+          vds,
+          netPay
+        };
+      }
+    },
+
+    {
+      title:"Excluding Tax and Excluding VAT",
+
+      calculate: () => {
+
+        let tds =
+          (amount / (1 - taxRate)) * taxRate;
+
+        let baseValue =
+          amount + tds;
+
+        let vds =
+          baseValue * vatRate;
+
+        let grossValue =
+          amount + tds + vds;
+
+        let netPay =
+          grossValue - tds - vds;
+
+        return {
+          grossValue,
+          baseValue,
+          tds,
+          vds,
+          netPay
+        };
+      }
+    },
+
+    {
+      title:"Excluding Tax and Including VAT",
+
+      calculate: () => {
+
+        let grossValue =
+          amount +
+          (amount / (1 - taxRate)) * taxRate;
+
+        let vds =
+          (grossValue / (1 + vatRate)) * vatRate;
+
+        let baseValue =
+          grossValue - vds;
+
+        let tds =
+          baseValue * taxRate;
+
+        let netPay =
+          grossValue - vds - tds;
+
+        return {
+          grossValue,
+          baseValue,
+          tds,
+          vds,
+          netPay
+        };
+      }
+    }
+
+  ];
+
+  const cards =
+    document.getElementById("cards");
+
+  cards.innerHTML = "";
+
+  scenarios.forEach((scenario)=>{
+
+    const result =
+      scenario.calculate();
+
+    cards.innerHTML += `
+
+      <div class="card">
+
+        <h2>${scenario.title}</h2>
+
+        <div class="row">
+          <span>Gross Value</span>
+          <span>${formatCurrency(result.grossValue)}</span>
+        </div>
+
+        <div class="row">
+          <span>Base Value</span>
+          <span>${formatCurrency(result.baseValue)}</span>
+        </div>
+
+        <div class="row">
+          <span>TDS Amount</span>
+          <span>${formatCurrency(result.tds)}</span>
+        </div>
+
+        <div class="row">
+          <span>VDS Amount</span>
+          <span>${formatCurrency(result.vds)}</span>
+        </div>
+
+        <div class="row net">
+          <span>Net Pay</span>
+          <span>${formatCurrency(result.netPay)}</span>
+        </div>
+
+      </div>
+
+    `;
+  });
+
+}
+
+calculateAll();
+
+</script>
+<footer style="
+  text-align:center;
+  margin-top:40px;
+  padding:15px;
+  color:#475569;
+  font-size:14px;
+">
+  Developed by <strong>Md. Fajla Rabby</strong>
+</footer>
+
+</body>
+</html>
